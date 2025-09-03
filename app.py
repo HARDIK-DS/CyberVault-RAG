@@ -1,94 +1,47 @@
 from flask import Flask, render_template, request
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
-from langchain_core.output_parsers import StrOutputParser
+from langchain.chains import RetrievalQA
 from dotenv import load_dotenv
+import os
 
-# Load environment
+# Load environment variables
 load_dotenv()
 
+# Flask App
 app = Flask(__name__)
 
-
-
+# Setup Embeddings and Vector DB
 embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 vectordb = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
-retriever = vectordb.as_retriever(search_type="similarity", search_kwargs={"k": 50})
 
-
+retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 4, "fetch_k": 10, "lambda_mult": 0.5})
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
 
+qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
 
-prompt = PromptTemplate(
-    template="""
-    You are CyberVault, a cybersecurity assistant.
-
-    Only use the context below to answer the question. 
-    If the answer is not in the context, say clearly: 
-    "This question is beyond the focus area of cybersecurity and therefore cannot be addressed appropriately.
-
-    Do NOT mention "the provided text" or "according to context".
-
-
-    Context:
-    {context}
-
-    Question: {question}
-
-    Answer (use bullet points if possible):
-    """,
-    input_variables=['context', 'question']
-)
-
-def format_docs(retrieved_docs):
-    return "\n\n".join(
-        f"From page {doc.metadata.get('page', 'unknown')}:\n{doc.page_content}"
-        for doc in retrieved_docs
-    )
-
-parallel_chain = RunnableParallel({
-    "context": retriever | RunnableLambda(format_docs),
-    "question": RunnablePassthrough()
-})
-
-main_chain = parallel_chain | prompt | llm | StrOutputParser()
-
-
+# ---------- ROUTES ----------
 @app.route("/", methods=["GET", "POST"])
-def index():
-    answer = None
-    question = None
+def home():
+    answer = ""
     if request.method == "POST":
         question = request.form.get("question")
+
         if question:
-            answer = main_chain.invoke(question)
-    return render_template("index.html", question=question, answer=answer)
+            try:
+                # Run query through RetrievalQA
+                response = qa_chain.invoke({"query": question})
+                answer = response.get("result", "").strip()
 
+                # Professional fallback if no answer found
+                if not answer or "I don't know" in answer:
+                    answer = "This topic seems outside the scope of cybersecurity. Please try another question."
+
+            except Exception as e:
+                answer = f"An error occurred: {str(e)}"
+
+    return render_template("index.html", answer=answer)
+
+# ---------- RUN LOCALLY ----------
 if __name__ == "__main__":
-    app.run(debug=True)
-
-
-
-parallel_chain = RunnableParallel({
-    "context": retriever | RunnableLambda(format_docs),
-    "question": RunnablePassthrough()
-})
-
-main_chain = parallel_chain | prompt | llm | StrOutputParser()
-
-
-@app.route("/", methods=["GET", "POST"])
-def index():
-    answer = None
-    question = None
-    if request.method == "POST":
-        question = request.form.get("question")
-        if question:
-            answer = main_chain.invoke(question)
-    return render_template("index.html", question=question, answer=answer)
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
+    app.run(host="0.0.0.0", port=5000, debug=True)
