@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CyberVault - Cybersecurity Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #00ffcc;
+        }
+        form {
+            margin: 20px auto;
+            max-width: 500px;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+        }
+        button {
+            padding: 12px 20px;
+            background: #00ffcc;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00cc99;
+        }
+        .answer-box {
+            margin-top: 30px;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: left;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ CyberVault</h1>
+    <p>Your AI-powered Cybersecurity Assistant</p>
+
+    <form method="POST">
+        <input type="text" name="question" placeholder="Ask me about cybersecurity..." required>
+        <button type="submit">Ask</button>
+    </form>
+
+    {% if answer %}
+    <div class="answer-box">
+        <h2>Answer:</h2>
+        <p>{{ answer | safe }}</p>
+    </div>
+    {% endif %}
+</body>
+</html>
