@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ---------------- STEP 1: Embeddings ----------------
+
 embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-# ---------------- STEP 2: Load Text ----------------
+
 loader = TextLoader('cybersecurity.txt', encoding='utf-8')
 documents = loader.load()
 
@@ -22,7 +22,7 @@ splitter = CharacterTextSplitter(
 docs = splitter.split_documents(documents)
 print(f"Total chunks created: {len(docs)}")
 
-# ---------------- STEP 3: Store in Chroma ----------------
+
 vectordb = Chroma.from_documents(docs, embeddings, persist_directory="./chroma_db")
 vectordb.persist()
 

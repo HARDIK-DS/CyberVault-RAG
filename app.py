@@ -27,11 +27,10 @@ prompt = PromptTemplate(
 
     Only use the context below to answer the question. 
     If the answer is not in the context, say clearly: 
-    "The documents do not provide enough information to answer this fully."
-<<<<<<< HEAD
+    "This question is beyond the focus area of cybersecurity and therefore cannot be addressed appropriately.
+
     Do NOT mention "the provided text" or "according to context".
-=======
->>>>>>> dev
+
 
     Context:
     {context}

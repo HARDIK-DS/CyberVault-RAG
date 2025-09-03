@@ -1,65 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CyberVault - Cybersecurity Assistant</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: #0a0a0a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
             color: #e0e0e0;
             text-align: center;
-            padding: 50px;
+            padding: 40px;
+            margin: 0;
         }
         h1 {
             color: #00ffcc;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        p.subtitle {
+            color: #bbb;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
         }
         form {
-            margin: 20px auto;
-            max-width: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
         }
         input[type="text"] {
-            width: 80%;
-            padding: 12px;
-            border-radius: 8px;
+            flex: 1;
+            max-width: 500px;
+            padding: 14px;
+            border-radius: 10px;
             border: none;
+            outline: none;
+            font-size: 1rem;
         }
         button {
-            padding: 12px 20px;
+            padding: 14px 20px;
             background: #00ffcc;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
         button:hover {
             background: #00cc99;
+            transform: scale(1.05);
         }
         .answer-box {
-            margin-top: 30px;
+            margin-top: 20px;
             background: #1a1a1a;
-            padding: 20px;
-            border-radius: 12px;
+            padding: 25px;
+            border-radius: 14px;
             text-align: left;
             max-width: 700px;
             margin-left: auto;
             margin-right: auto;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .answer-box h2 {
+            color: #00ffcc;
+            margin-bottom: 10px;
+        }
+        .answer-box p {
+            line-height: 1.6;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
     <h1>🛡️ CyberVault</h1>
-    <p>Your AI-powered Cybersecurity Assistant</p>
+    <p class="subtitle">Your AI-powered Cybersecurity Assistant</p>
 
     <form method="POST">
-        <input type="text" name="question" placeholder="Ask me about cybersecurity..." required>
+        <input type="text" name="question" placeholder="💬 How can I help you with cybersecurity today?" required>
         <button type="submit">Ask</button>
     </form>
 
     {% if answer %}
     <div class="answer-box">
-        <h2>Answer:</h2>
+        <h2>🔍 Answer:</h2>
         <p>{{ answer | safe }}</p>
     </div>
     {% endif %}
 </body>
 </html>
+
