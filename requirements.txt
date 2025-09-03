@@ -1,0 +1,11 @@
+flask
+langchain
+chromadb
+huggingface-hub
+sentence-transformers
+transformers
+torch
+python-dotenv
+pytest
+requests
+gunicorn

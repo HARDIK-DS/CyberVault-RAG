@@ -12,14 +12,15 @@ load_dotenv()
 app = Flask(__name__)
 
 
+
 embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 vectordb = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
 retriever = vectordb.as_retriever(search_type="similarity", search_kwargs={"k": 50})
 
-# ---------------- STEP 2: LLM ----------------
+
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
 
-# ---------------- STEP 3: Prompt ----------------
+
 prompt = PromptTemplate(
     template="""
     You are CyberVault, a cybersecurity assistant.
@@ -27,7 +28,10 @@ prompt = PromptTemplate(
     Only use the context below to answer the question. 
     If the answer is not in the context, say clearly: 
     "The documents do not provide enough information to answer this fully."
+<<<<<<< HEAD
     Do NOT mention "the provided text" or "according to context".
+=======
+>>>>>>> dev
 
     Context:
     {context}
@@ -52,7 +56,7 @@ parallel_chain = RunnableParallel({
 
 main_chain = parallel_chain | prompt | llm | StrOutputParser()
 
-# ---------------- Flask Routes ----------------
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     answer = None
@@ -65,3 +69,27 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+
+parallel_chain = RunnableParallel({
+    "context": retriever | RunnableLambda(format_docs),
+    "question": RunnablePassthrough()
+})
+
+main_chain = parallel_chain | prompt | llm | StrOutputParser()
+
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    answer = None
+    question = None
+    if request.method == "POST":
+        question = request.form.get("question")
+        if question:
+            answer = main_chain.invoke(question)
+    return render_template("index.html", question=question, answer=answer)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
