@@ -20,7 +20,6 @@ CyberVault-RAG/
 │── chroma_db/ # Chroma vector database storage
 │── templates/
 │ └── index.html # Frontend UI template
-│── static/ # (Optional) for CSS, JS, and images
 │── requirements.txt # Dependencies for the project
 │── .env # Environment variables (API keys, etc.)
 │── README.md # Project documentation
