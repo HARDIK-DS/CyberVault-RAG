@@ -1,86 +1,72 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
+from langchain_community.vectorstores import Chroma
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain.prompts import PromptTemplate
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
+from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 import os
-import traceback
 
-# Load environment variables
+# Load environment
 load_dotenv()
 
-# ✅ Correct imports
-from langchain.chains import RetrievalQA
-from langchain_chroma import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+app = Flask(__name__)  # ✅ Corrected here
 
-# ---------- FLASK APP ----------
-app = Flask(__name__)
+# --- Setup Vector DB and LLM ---
+embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+vectordb = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
+retriever = vectordb.as_retriever(search_type="similarity", search_kwargs={"k": 50})
 
-# ---------- HELPER FUNCTION ----------
-def get_qa_chain():
-    try:
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-        vectordb = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
-        retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 4, "fetch_k": 10, "lambda_mult": 0.5})
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
-        return RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
-    except Exception as e:
-        print("Error initializing QA chain:", e)
-        traceback.print_exc()
-        return None
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
 
+# --- Prompt Template ---
+prompt = PromptTemplate(
+    template="""
+    You are CyberVault, a cybersecurity assistant.
 
-# ---------- ROUTES ----------
+    Only use the context below to answer the question.
+    If the answer is not in the context, say clearly:
+    "This question is beyond the focus area of cybersecurity and therefore cannot be addressed appropriately."
+
+    Do NOT mention "the provided text" or "according to context".
+
+    Context:
+    {context}
+
+    Question: {question}
+
+    Answer (use bullet points if possible):
+    """,
+    input_variables=['context', 'question']
+)
+
+# --- Helper to format retrieved docs ---
+def format_docs(retrieved_docs):
+    return "\n\n".join(
+        f"From page {doc.metadata.get('page', 'unknown')}:\n{doc.page_content}"
+        for doc in retrieved_docs
+    )
+
+# --- Build Chain ---
+parallel_chain = RunnableParallel({
+    "context": retriever | RunnableLambda(format_docs),
+    "question": RunnablePassthrough()
+})
+
+main_chain = parallel_chain | prompt | llm | StrOutputParser()
+
+# --- Flask Routes ---
 @app.route("/", methods=["GET", "POST"])
-def home():
-    answer = ""
+def index():
+    answer = None
+    question = None
     if request.method == "POST":
         question = request.form.get("question")
-
         if question:
-            try:
-                qa_chain = get_qa_chain()
-                if qa_chain is None:
-                    answer = "Error: Could not initialize QA system."
-                else:
-                    response = qa_chain.invoke({"query": question})
-                    answer = response.get("result", "").strip()
+            answer = main_chain.invoke(question)
+    return render_template("index.html", question=question, answer=answer)
 
-                    if not answer or "I don't know" in answer:
-                        answer = "This topic seems outside the scope of cybersecurity. Please try another question."
-            except Exception as e:
-                print("Error in home() route:", e)
-                traceback.print_exc()
-                answer = f"An error occurred: {str(e)}"
-
-    return render_template("index.html", answer=answer)
-
-
-# ---------- API ROUTE FOR FRONTEND AJAX CALLS ----------
-@app.route("/api/ask", methods=["POST"])
-def ask():
-    try:
-        data = request.get_json()
-        question = data.get("question", "")
-
-        if not question:
-            return jsonify({"error": "No question provided"}), 400
-
-        qa_chain = get_qa_chain()
-        if qa_chain is None:
-            return jsonify({"error": "Failed to load QA chain"}), 500
-
-        response = qa_chain.invoke({"query": question})
-        answer = response.get("result", "").strip()
-
-        if not answer or "I don't know" in answer:
-            answer = "This topic seems outside the scope of cybersecurity. Please try another question."
-
-        return jsonify({"answer": answer})
-    except Exception as e:
-        print("Error in /api/ask route:", e)
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-# ---------- RUN LOCALLY ----------
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+# --- Run Locally ---
+if __name__ == "__main__":  # ✅ Corrected here
+    port = int(os.environ.get("PORT", 5000))  # For Render deployment
+    app.run(host="0.0.0.0", port=port, debug=True)
