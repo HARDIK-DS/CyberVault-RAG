@@ -6,7 +6,8 @@ import traceback
 # Load environment variables
 load_dotenv()
 
-from langchain_chains import RetrievalQA
+# ✅ Correct imports
+from langchain.chains import RetrievalQA
 from langchain_chroma import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 
