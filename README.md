@@ -14,7 +14,8 @@ It uses **retrieval-augmented generation (RAG)** to fetch the most relevant info
 
 ---
 
-## 🗂️ Project Structure
+## 🗂️ Project Structure<img width="800" height="405" alt="image" src="https://github.com/user-attachments/assets/2b063e79-5bc0-487d-a4e3-cf9631cdaf06" />
+
 CyberVault-RAG/
 │── app.py # Flask backend with LangChain pipeline
 │── chroma_db/ # Chroma vector database storage
